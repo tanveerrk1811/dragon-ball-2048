@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Dragon Ball 2048</string>
-    <string name="load_error">The game could not be loaded.</string>
-    <string name="retry">Retry</string>
-</resources>
