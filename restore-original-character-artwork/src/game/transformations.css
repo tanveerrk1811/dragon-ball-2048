@@ -1,0 +1,127 @@
+/* ===== Individual transformation animations (see transformations.ts) =====
+   Only transform / opacity are animated. Durations are driven by --fxd (effect length) and --fxdl (start delay)
+   which are set per tile. `cqw` units resolve against the board (container-type: inline-size). */
+
+/* --- portrait morph: old form charges up, white-out, new form revealed --- */
+.tile .evo-from { z-index: 1; animation: evoFrom calc(var(--fxd) * 0.62) ease-in var(--fxdl) both; }
+.tile .evo-to { animation: evoTo calc(var(--fxd) * 0.9) ease-out var(--fxdl) both; transform-origin: 50% 38%; }
+@keyframes evoFrom {
+  0% { opacity: 1; transform: translate(0, 0); filter: none; }
+  12% { transform: translate(-0.8%, 0.5%); }
+  24% { transform: translate(0.9%, -0.6%); filter: brightness(1.3); }
+  36% { transform: translate(-1.1%, 0.6%) scale(1.04); filter: brightness(1.8) saturate(0.6); }
+  52% { opacity: 1; transform: scale(1.12); filter: brightness(5) saturate(0); }
+  72% { opacity: 0; filter: brightness(8) saturate(0); }
+  100% { opacity: 0; }
+}
+@keyframes evoTo {
+  0%, 40% { opacity: 0; filter: brightness(6) saturate(0); transform: scale(1); }
+  52% { opacity: 1; filter: brightness(6) saturate(0); transform: scale(1.16); }
+  72% { filter: brightness(2.2) saturate(1.3); transform: scale(1.06); }
+  100% { opacity: 1; filter: none; transform: scale(1); }
+}
+.tile[data-fx] .tile-inner::after { background: radial-gradient(circle, #fff, var(--aura) 55%, transparent 75%); }
+
+/* --- effect layer --- */
+.fx { position: absolute; inset: 0; pointer-events: none; }
+.fx > * { pointer-events: none; }
+.fx-kaioken { --aura: #ff3d2e; --aura2: #ff9a1f; }
+
+.fx-glow { position: absolute; inset: -45%; border-radius: 50%; z-index: -1; opacity: 0; background: radial-gradient(closest-side, #fff 0%, var(--aura) 28%, var(--aura2) 55%, transparent 74%); animation: fxGlow calc(var(--fxd) * 0.9) ease-out calc(var(--fxdl) + var(--fxd) * 0.12) both; }
+@keyframes fxGlow { 0% { opacity: 0; transform: scale(0.2); } 35% { opacity: 0.95; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.6); } }
+
+.fx-ring { position: absolute; inset: 8%; border-radius: 50%; z-index: 3; opacity: 0; border: max(2px, 0.9cqw) solid var(--aura); box-shadow: 0 0 2cqw var(--aura), inset 0 0 2cqw var(--aura); animation: fxRing calc(var(--fxd) * 0.7) cubic-bezier(0.15, 0.7, 0.3, 1) calc(var(--fxdl) + var(--fxd) * 0.25 + var(--rd, 0ms)) both; }
+@keyframes fxRing { 0% { opacity: 0; transform: scale(0.4); } 15% { opacity: 0.95; } 100% { opacity: 0; transform: scale(2.3); } }
+
+/* particles: radiate (or rise) from the tile centre */
+.fx-p { position: absolute; left: 50%; top: 50%; width: var(--ps); height: var(--ps); margin: calc(var(--ps) / -2); z-index: 3; border-radius: 50%; opacity: 0; background: #fff; box-shadow: 0 0 1.6cqw var(--aura), 0 0 0.6cqw #fff; animation: fxPart calc(var(--fxd) * 0.75) cubic-bezier(0.1, 0.7, 0.3, 1) calc(var(--fxdl) + var(--fxd) * 0.22 + var(--dl)) both; }
+@keyframes fxPart {
+  0% { opacity: 0; transform: rotate(var(--a)) translateX(0) scale(0.6); }
+  12% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(0.2); }
+}
+.fx-streak .fx-p { width: calc(var(--ps) * 3.2); height: calc(var(--ps) * 0.5); margin: calc(var(--ps) * -0.25) calc(var(--ps) * -1.6); border-radius: 99px; background: linear-gradient(90deg, transparent, #fff 70%, var(--aura)); }
+.fx-spark .fx-p { border-radius: 0; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); background: #fff3c4; box-shadow: none; filter: drop-shadow(0 0 3px var(--aura)); width: calc(var(--ps) * 1.8); height: calc(var(--ps) * 1.8); margin: calc(var(--ps) * -0.9); }
+.fx-fang .fx-p { border-radius: 24%; background: #e4bd7c; box-shadow: none; }
+.fx-regen .fx-p { background: #d7ffb0; box-shadow: 0 0 1.6cqw #7bd44a, 0 0 0.6cqw #fff; }
+
+/* flames rising behind the portrait */
+.fx-flames { position: absolute; left: -18%; right: -18%; bottom: -6%; height: 150%; z-index: -1; }
+.fx-flames i { position: absolute; bottom: 0; left: var(--x); width: var(--w); height: var(--h); margin-left: calc(var(--w) / -2); transform-origin: 50% 100%; opacity: 0; clip-path: polygon(50% 0, 63% 32%, 82% 14%, 100% 100%, 0 100%, 18% 14%, 37% 32%); background: linear-gradient(to top, var(--aura2), var(--aura) 55%, rgba(255, 255, 255, 0.92)); animation: fxFlame var(--fxd) ease-out calc(var(--fxdl) + var(--fxd) * 0.2 + var(--dl)) both; }
+@keyframes fxFlame {
+  0% { opacity: 0; transform: scaleY(0.1); }
+  25% { opacity: 0.95; transform: scaleY(1.05); }
+  45% { transform: scaleY(0.86); }
+  65% { opacity: 0.85; transform: scaleY(1); }
+  100% { opacity: 0; transform: scaleY(0.85) translateY(-8%); }
+}
+
+/* lightning (SSJ2 / SSJ3 / SSB) */
+.fx-bolts { position: absolute; left: -50%; top: -50%; width: 200%; height: 200%; z-index: 3; overflow: visible; }
+.fx-bolt { opacity: 0; animation: fxBolt calc(var(--fxd) * 0.6) step-end calc(var(--fxdl) + var(--fxd) * 0.2 + var(--dl)) both; }
+.fx-bolt polyline { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.fx-bolt .halo { stroke: var(--aura2); opacity: 0.45; }
+.fx-bolt .core { stroke: #fff; }
+.fx-ssj2 .fx-bolt .halo, .fx-blue .fx-bolt .halo { stroke: #38e8ff; }
+@keyframes fxBolt { 0% { opacity: 0; } 8% { opacity: 1; } 18% { opacity: 0; } 28% { opacity: 1; } 44% { opacity: 0; } 58% { opacity: 0.9; } 72% { opacity: 0; } 100% { opacity: 0; } }
+
+/* Tien: tri-beam from the third eye */
+.fx-beam { position: absolute; left: 50%; top: 44%; width: max(2px, 1.1cqw); height: 78%; margin-left: calc(max(2px, 1.1cqw) / -2); z-index: 3; opacity: 0; border-radius: 99px; transform-origin: 50% 0; transform: rotate(var(--r)) scaleY(0); background: linear-gradient(to bottom, #fff, var(--aura) 40%, transparent); box-shadow: 0 0 2cqw var(--aura); animation: fxBeam calc(var(--fxd) * 0.55) ease-out calc(var(--fxdl) + var(--fxd) * 0.28) both; }
+@keyframes fxBeam {
+  0% { opacity: 0; transform: rotate(var(--r)) scaleY(0); }
+  25% { opacity: 1; transform: rotate(var(--r)) scaleY(1); }
+  60% { opacity: 1; transform: rotate(var(--r)) scaleY(1) scaleX(2.2); }
+  100% { opacity: 0; transform: rotate(var(--r)) scaleY(1) scaleX(0.2); }
+}
+
+/* Yamcha: wolf-fang claw slashes */
+.fx-slash { position: absolute; left: -30%; top: var(--y); width: 160%; height: max(2px, 1cqw); z-index: 3; opacity: 0; border-radius: 99px; background: linear-gradient(90deg, transparent, #fff 45%, var(--aura) 60%, transparent); box-shadow: 0 0 1.6cqw var(--aura); transform: rotate(-32deg) translateX(-100%); animation: fxSlash calc(var(--fxd) * 0.4) ease-out calc(var(--fxdl) + var(--fxd) * 0.2 + var(--dl)) both; }
+@keyframes fxSlash { 0% { opacity: 0; transform: rotate(-32deg) translateX(-100%); } 15% { opacity: 1; } 100% { opacity: 0; transform: rotate(-32deg) translateX(100%); } }
+
+/* Piccolo / Blue: swirling energy ring */
+.fx-swirl { position: absolute; inset: -18%; border-radius: 50%; z-index: -1; opacity: 0; background: conic-gradient(from 0deg, transparent 0 20%, var(--aura) 35%, transparent 50%, #fff 70%, transparent 85%); -webkit-mask: radial-gradient(farthest-side, transparent 62%, #000 64%, #000 80%, transparent 82%); mask: radial-gradient(farthest-side, transparent 62%, #000 64%, #000 80%, transparent 82%); animation: fxSwirl var(--fxd) ease-in-out var(--fxdl) both; }
+@keyframes fxSwirl { 0% { opacity: 0; transform: rotate(0) scale(0.5); } 30% { opacity: 1; } 100% { opacity: 0; transform: rotate(540deg) scale(1.5); } }
+
+/* Super Saiyan God: ritual ring with six orbiting embers */
+.fx-orbit { position: absolute; inset: -14%; z-index: 3; opacity: 0; animation: fxOrbit var(--fxd) ease-out var(--fxdl) both; }
+.fx-orbit::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: max(1.5px, 0.5cqw) dashed var(--aura); box-shadow: 0 0 2cqw var(--aura); }
+.fx-orbit i { position: absolute; left: 50%; top: 50%; width: 2.4cqw; height: 2.4cqw; margin: -1.2cqw; border-radius: 50%; background: #fff; box-shadow: 0 0 2cqw var(--aura), 0 0 4cqw var(--aura2); transform: rotate(var(--a)) translateX(14cqw); }
+@keyframes fxOrbit { 0% { opacity: 0; transform: rotate(0) scale(1.5); } 25% { opacity: 1; transform: rotate(120deg) scale(1); } 80% { opacity: 1; transform: rotate(360deg) scale(1); } 100% { opacity: 0; transform: rotate(420deg) scale(0.7); } }
+
+/* Ultra Instinct: after-images */
+.fx-ghost { position: absolute; inset: 0; border-radius: 14%; overflow: hidden; z-index: -1; opacity: 0; box-shadow: 0 0 0 max(1.5px, 0.5cqw) var(--aura); animation: fxGhost calc(var(--fxd) * 0.8) ease-out calc(var(--fxdl) + var(--fxd) * 0.3 + var(--dl)) both; }
+.fx-ghost img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(1.3) saturate(0.7); }
+@keyframes fxGhost { 0% { opacity: 0; transform: translateX(0) scale(1); } 25% { opacity: 0.7; } 100% { opacity: 0; transform: translateX(calc(var(--sx) * 32%)) scale(1.05); } }
+
+/* glint sweeping across the portrait (inside .tile-inner, clipped) */
+.fx-sweep { position: absolute; inset: -20%; z-index: 4; pointer-events: none; background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.85) 50%, transparent 60%); transform: translateX(-120%); animation: fxSweep calc(var(--fxd) * 0.5) ease-in-out calc(var(--fxdl) + var(--fxd) * 0.45) both; }
+@keyframes fxSweep { to { transform: translateX(120%); } }
+
+/* --- board-wide effects --- */
+.fx-screen { position: absolute; inset: 0; z-index: 30; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 50%, var(--sc, #fff) 0%, transparent 58%); animation: fxScreen var(--fxd) ease-out var(--sd) both; }
+@keyframes fxScreen { 0% { opacity: 0; } 18% { opacity: 0.45; } 100% { opacity: 0; } }
+
+.board.shake-1 { animation: bshake1 360ms ease-out var(--shd, 0ms); }
+.board.shake-2 { animation: bshake2 520ms ease-out var(--shd, 0ms); }
+.board.shake-3 { animation: bshake3 700ms ease-out var(--shd, 0ms); }
+@keyframes bshake1 { 0%, 100% { transform: none; } 20% { transform: translate(-0.5%, 0.3%); } 40% { transform: translate(0.5%, -0.3%); } 60% { transform: translate(-0.3%, 0.2%); } 80% { transform: translate(0.2%, -0.1%); } }
+@keyframes bshake2 { 0%, 100% { transform: none; } 12% { transform: translate(-0.9%, 0.5%) rotate(-0.2deg); } 28% { transform: translate(0.9%, -0.6%) rotate(0.2deg); } 44% { transform: translate(-0.7%, 0.4%); } 60% { transform: translate(0.6%, -0.3%); } 80% { transform: translate(-0.3%, 0.2%); } }
+@keyframes bshake3 { 0%, 100% { transform: none; } 8% { transform: translate(-1.4%, 0.8%) rotate(-0.4deg); } 20% { transform: translate(1.3%, -0.9%) rotate(0.4deg); } 34% { transform: translate(-1.1%, 0.7%) rotate(-0.3deg); } 48% { transform: translate(0.9%, -0.6%) rotate(0.2deg); } 64% { transform: translate(-0.6%, 0.4%); } 82% { transform: translate(0.3%, -0.2%); } }
+
+.fx-banner { position: absolute; left: 0; right: 0; top: 50%; z-index: 40; pointer-events: none; padding: 1.4cqw 0; text-align: center; opacity: 0; font-weight: 900; font-style: italic; font-size: 7.4cqw; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; text-shadow: 0 0 2cqw var(--aura), 0 0 5cqw var(--aura2), 0 0.6cqw 0 rgba(0, 0, 0, 0.6); background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.6) 22%, rgba(0, 0, 0, 0.6) 78%, transparent); transform: translateY(-50%) skewX(-8deg) scale(0.6); animation: fxBanner 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) var(--bd) both; }
+@keyframes fxBanner {
+  0% { opacity: 0; transform: translateY(-50%) skewX(-8deg) scale(0.6); }
+  18% { opacity: 1; transform: translateY(-50%) skewX(-8deg) scale(1.12); }
+  30% { transform: translateY(-50%) skewX(-8deg) scale(1); }
+  78% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-50%) skewX(-8deg) scale(1.06); }
+}
+
+/* evolution panel: current-form portrait flares when a new form is unlocked */
+.evo-card img.evo-up { animation: evoUp 1.1s ease-out; }
+@keyframes evoUp { 0% { filter: brightness(5) saturate(0); transform: scale(1.25); } 40% { filter: brightness(2); } 100% { filter: none; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx, .fx-screen, .fx-banner, .fx-sweep, .tile .evo-from { display: none !important; }
+  .tile .evo-to, .evo-card img.evo-up, .board[class*="shake-"] { animation: none !important; }
+}

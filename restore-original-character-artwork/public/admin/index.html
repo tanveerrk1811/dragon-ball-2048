@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Ad Dashboard — Dragon Ball 2048 (owner only)</title>
+<style>
+:root{color-scheme:dark;--bg:#0a0a0f;--card:#13131a;--line:#262633;--o:#ff8a1f;--g:#ffc83d;--b:#3cb6ff;--ok:#4ade80;--bad:#f87171;--warn:#fbbf24;--mut:#8f8da0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#e8e5f0;font:14px/1.5 "Segoe UI",system-ui,sans-serif}
+header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:center;flex-wrap:wrap;position:sticky;top:0;background:#0a0a0fee;backdrop-filter:blur(6px);z-index:5}
+h1{font-size:18px;margin:0;color:var(--g)}
+h2{font-size:15px;margin:0 0 10px;color:var(--o)}
+h3{font-size:13px;margin:14px 0 6px;color:var(--b);text-transform:uppercase;letter-spacing:.08em}
+main{max-width:1100px;margin:0 auto;padding:18px;display:grid;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.warn{border-color:#fbbf2466;background:#1d1708}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 14px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut)}
+label.row{flex-direction:row;align-items:center;gap:8px;color:#e8e5f0;font-size:14px}
+input[type=text],input[type=number],select,textarea{background:#0b0b11;border:1px solid var(--line);color:#fff;border-radius:8px;padding:8px 10px;font:inherit;width:100%}
+input.bad{border-color:var(--bad)}
+button{background:#1d1d29;border:1px solid var(--line);color:#fff;border-radius:9px;padding:8px 14px;font:inherit;cursor:pointer}
+button.p{background:linear-gradient(#ffa43c,#f06a00);color:#1b0f00;border:0;font-weight:700}
+button.d{border-color:#f8717166;color:var(--bad)}
+.pill{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.test{background:#fbbf2422;color:var(--warn)}.prod{background:#4ade8022;color:var(--ok)}
+.issue{padding:6px 10px;border-radius:8px;margin:4px 0;font-size:13px}
+.issue.error{background:#f8717122;color:#fecaca}.issue.warn{background:#fbbf2418;color:#fde68a}.issue.ok{background:#4ade8018;color:#bbf7d0}
+.devs{display:flex;gap:12px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+pre{white-space:pre-wrap;max-height:240px;overflow:auto;background:#0b0b11;padding:10px;border-radius:8px;font-size:12px}
+.wire{max-width:300px;margin:0 auto;border:2px solid var(--line);border-radius:18px;padding:10px;display:grid;gap:6px;background:#0b0b11}
+.wire div{border-radius:8px;padding:8px;text-align:center;font-size:11px;border:1px dashed #444;color:#888}
+.wire .on{border:1px solid var(--o);color:var(--g);background:#ff8a1f18}
+.wire .game{border-style:solid;border-color:#3cb6ff66;color:var(--b);padding:34px 8px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+small,.hint{color:var(--mut);font-size:12px}
+a{color:var(--b)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ad Management Dashboard</h1>
+  <span id="modePill" class="pill test">TEST MODE</span>
+  <span style="flex:1"></span>
+  <div class="acts">
+    <button id="btnLoad">Load site config</button>
+    <button id="btnSave">Save preview (this browser)</button>
+    <button id="btnDownload" class="p">Download ad-config.json</button>
+    <button id="btnReset" class="d">Reset to safe defaults</button>
+  </div>
+</header>
+<main>
+  <section class="card warn">
+    <h2>Security notice — read first</h2>
+    <p>This page is <b>static</b>. It has no login and cannot protect anything by itself — hiding it with CSS or JavaScript would not be real security. <b>Protect the <code>/admin/</code> folder on your server</b> (HTTP Basic Auth via <code>.htaccess</code>/<code>.htpasswd</code>, Cloudflare Access, Netlify/Vercel password protection, or a separate authenticated backend). See <code>docs/DEPLOY.md</code>.</p>
+    <p>It only edits <b>public</b> identifiers (publisher IDs, ad unit IDs, placement keys). <b>Never</b> enter API secrets, passwords or payment details. Changes go live only after you download <code>ad-config.json</code> and upload it to the site root (and rebuild the Android app for Android). “Save preview” stores a draft in this browser only; test it by opening <a href="../?adpreview=1" target="_blank" rel="noopener">the game with ?adpreview=1</a>.</p>
+  </section>
+
+  <section class="card"><h2>Master switches</h2><div class="grid" id="secGlobal"></div></section>
+  <section class="card"><h2>Google AdSense (website)</h2><div class="grid" id="secAdsense"></div><p class="hint">Requires an approved AdSense account and site. Ad unit IDs are set per placement below.</p></section>
+  <section class="card"><h2>Adsterra (website only)</h2><p class="hint">Banner and Native Banner formats. Paste values from your own Adsterra ad code (the invoke.js URL, the 32-character key, or the native container id). Popunder and Social Bar are deliberately unsupported. <b>Adsterra has no official Android SDK</b> — it cannot be used in the app.</p></section>
+  <section class="card"><h2>Google AdMob (Android app)</h2><div class="grid" id="secAdmob"></div><div id="secAndroidPl"></div></section>
+  <section class="card"><h2>Website placements</h2><div id="secPlacements"></div></section>
+  <section class="card"><h2>Analytics (optional)</h2><div class="grid" id="secAnalytics"></div></section>
+  <section class="card"><h2>Ad position preview</h2><div class="wire" id="wire"></div><p class="hint" style="text-align:center">Ads never overlay the board, controls or scores.</p></section>
+  <section class="card"><h2>Validation</h2><div id="issues"></div></section>
+  <section class="card"><h2>Integration status</h2><p class="hint">Read from this browser only (the browser where you opened the game with the same origin). It is not remote monitoring. “Loaded” for Adsterra means the iframe loaded; fill is not verifiable — use Adsterra statistics. Real revenue is only available in the official AdSense / Adsterra / AdMob dashboards.</p><div id="status"></div><h3>Error log</h3><pre id="log">(empty)</pre><button id="btnClearLog">Clear log</button></section>
+  <section class="card"><h2>Import / raw JSON</h2><textarea id="raw" rows="8"></textarea><div class="acts" style="margin-top:8px"><button id="btnImport">Import JSON</button></div></section>
+</main>
+<script>
+(function(){
+'use strict';
+var DEV=['mobile','tablet','desktop'], PL=['topBanner','bottomBanner','gameOver','interstitial'];
+function pl(){return {enabled:false,network:'none',devices:DEV.slice(),adsense:{slotId:'',format:'auto',minHeight:60},adsterra:{format:'banner',key:'',scriptSrc:'',containerId:'',width:320,height:50,allowSameOrigin:false},custom:{imageUrl:'',href:'',alt:'Sponsored'}};}
+function defaults(){var i=pl();i.minIntervalSeconds=180;i.everyNGames=3;i.minSecondsAfterLoad=60;return {version:1,mode:'test',masterEnabled:false,web:{enabled:false,requireConsent:true,allowInAppWebAds:false},android:{enabled:false,network:'admob',tagForChildDirectedTreatment:'unspecified',maxAdContentRating:'PG'},networks:{adsense:{publisherId:'',testMode:false},adsterra:{notes:'Adsterra publishes no official Android SDK; use it for the website only.'},admob:{appId:'',useTestUnits:true,bannerUnitId:'',interstitialUnitId:'',rewardedUnitId:''}},placements:{topBanner:pl(),bottomBanner:pl(),gameOver:pl(),interstitial:i},androidPlacements:{banner:{enabled:false},interstitial:{enabled:false,minIntervalSeconds:180,everyNGames:3,minSecondsAfterLaunch:60},rewarded:{enabled:false,reward:'undo'}},analytics:{enabled:false,measurementId:''}};}
+var cfg=defaults();
+function get(p){return p.split('.').reduce(function(o,k){return o&&o[k];},cfg);}
+function set(p,v){var a=p.split('.'),l=a.pop(),o=a.reduce(function(o,k){return o[k];},cfg);o[l]=v;}
+function merge(b,r){if(typeof b!=='object'||b===null||Array.isArray(b)||typeof r!=='object'||r===null)return b;var o={};Object.keys(b).forEach(function(k){var x=b[k],y=r[k];if(y===undefined)o[k]=x;else if(x&&typeof x==='object'&&!Array.isArray(x))o[k]=merge(x,y);else if(Array.isArray(x))o[k]=Array.isArray(y)?y.filter(function(s){return typeof s==='string';}):x;else o[k]=(typeof y===typeof x)?y:x;});return o;}
+var RE={pub:/^ca-pub-\d{16}$/,slot:/^\d{6,15}$/,key:/^[a-f0-9]{32}$/i,id:/^[\w-]{3,80}$/,app:/^ca-app-pub-\d{16}~\d{10}$/,unit:/^ca-app-pub-\d{16}\/\d{10}$/,ga:/^G-[A-Z0-9]{4,}$/};
+function https(u){try{var x=new URL(u.indexOf('//')===0?'https:'+u:u);return x.protocol==='https:';}catch(e){return false;}}
+function validate(){var s=[];function e(p,m){s.push({l:'error',p:p,m:m});}function w(p,m){s.push({l:'warn',p:p,m:m});}
+PL.forEach(function(n){var p=cfg.placements[n],b='placements.'+n;if(!p.enabled)return;
+if(p.network==='none')e(b,'Enabled but no network selected.');
+if(p.network==='adsense'){if(!RE.pub.test(cfg.networks.adsense.publisherId))e('networks.adsense.publisherId','Publisher ID must be ca-pub-################.');if(!RE.slot.test(p.adsense.slotId))e(b+'.adsense.slotId','Ad unit ID must be 6–15 digits.');}
+if(p.network==='adsterra'){var a=p.adsterra;if(!https(a.scriptSrc))e(b+'.adsterra.scriptSrc','Script URL must be https://…');if(a.format==='banner'){if(!RE.key.test(a.key))e(b+'.adsterra.key','Key must be 32 hex characters.');}else if(!RE.id.test(a.containerId))e(b+'.adsterra.containerId','Container id required (e.g. container-xxxxxxxx).');}
+if(p.network==='custom'){if(!https(p.custom.imageUrl))e(b+'.custom.imageUrl','Image must be https://…');if(!https(p.custom.href))e(b+'.custom.href','Link must be https://…');}
+if(!p.devices.length)w(b+'.devices','No devices selected.');});
+if(cfg.android.enabled&&cfg.android.network==='admob'){var m=cfg.networks.admob;if(cfg.mode==='production'&&!m.useTestUnits){if(!RE.app.test(m.appId))e('networks.admob.appId','App ID must be ca-app-pub-################~##########.');[['bannerUnitId',cfg.androidPlacements.banner.enabled],['interstitialUnitId',cfg.androidPlacements.interstitial.enabled],['rewardedUnitId',cfg.androidPlacements.rewarded.enabled]].forEach(function(x){if(x[1]&&!RE.unit.test(m[x[0]]))e('networks.admob.'+x[0],'Unit ID must be ca-app-pub-################/##########.');});}
+if(m.useTestUnits)w('networks.admob.useTestUnits','Android uses official Google TEST units (no revenue).');}
+if(cfg.analytics.enabled&&!RE.ga.test(cfg.analytics.measurementId))e('analytics.measurementId','GA4 measurement ID must look like G-XXXXXXXXXX.');
+if(cfg.mode==='production'&&cfg.networks.admob.useTestUnits&&cfg.android.enabled)w('mode','Production mode but AdMob test units are still on.');
+if(cfg.mode==='test'&&cfg.masterEnabled)w('mode','Mode is “test”. Switch to “production” only after approvals and valid IDs.');
+if(cfg.web.allowInAppWebAds)w('web.allowInAppWebAds','Advanced: AdSense in the app WebView needs the WebView API for Ads and an approved site; native AdMob is recommended.');
+return s;}
+function el(t,a,c){var n=document.createElement(t);if(a)Object.keys(a).forEach(function(k){if(k==='class')n.className=a[k];else n.setAttribute(k,a[k]);});(c||[]).forEach(function(x){n.append(x);});return n;}
+function fText(lbl,p,o){o=o||{};var i=el('input',{type:o.type||'text',placeholder:o.ph||''});i.value=get(p);if(o.type==='number')i.addEventListener('input',function(){set(p,Number(i.value)||0);refresh();});else i.addEventListener('input',function(){set(p,i.value.trim());refresh();});i.dataset.path=p;return el('label',null,[lbl,i]);}
+function fBool(lbl,p){var i=el('input',{type:'checkbox'});i.checked=!!get(p);i.addEventListener('change',function(){set(p,i.checked);refresh();});return el('label',{class:'row'},[i,lbl]);}
+function fSel(lbl,p,opts,rerender){var s=el('select');opts.forEach(function(o){var op=el('option',{value:o[0]});op.textContent=o[1];s.append(op);});s.value=get(p);s.addEventListener('change',function(){set(p,s.value);if(rerender)build();else refresh();});return el('label',null,[lbl,s]);}
+function fDev(p){var w=el('div',{class:'devs'});DEV.forEach(function(d){var i=el('input',{type:'checkbox'});i.checked=get(p).indexOf(d)>-1;i.addEventListener('change',function(){var a=get(p).filter(function(x){return x!==d;});if(i.checked)a.push(d);set(p,a);refresh();});w.append(el('label',{class:'row'},[i,d]));});return el('label',null,['Show on devices',w]);}
+var NAMES={topBanner:'Top banner (above the game)',bottomBanner:'Bottom banner (below the game)',gameOver:'Game-over panel (below the board)',interstitial:'Between sessions (optional break dialog)'};
+function build(){
+ var g=document.getElementById('secGlobal');g.replaceChildren(
+  fSel('Mode','mode',[['test','Test'],['production','Production']]),fBool('Master advertising ON','masterEnabled'),fBool('Website advertising ON','web.enabled'),fBool('Android advertising ON','android.enabled'),fBool('Require visitor consent before web ads load','web.requireConsent'),fBool('Allow AdSense inside the app WebView (advanced)','web.allowInAppWebAds'));
+ document.getElementById('secAdsense').replaceChildren(fText('Publisher ID','networks.adsense.publisherId',{ph:'ca-pub-0000000000000000'}),fBool('AdSense test mode (data-adtest=on)','networks.adsense.testMode'));
+ document.getElementById('secAdmob').replaceChildren(fSel('Android network','android.network',[['admob','Google AdMob'],['none','None']]),fBool('Use official Google TEST ad units','networks.admob.useTestUnits'),fText('AdMob App ID','networks.admob.appId',{ph:'ca-app-pub-…~…'}),fText('Banner unit ID','networks.admob.bannerUnitId',{ph:'ca-app-pub-…/…'}),fText('Interstitial unit ID','networks.admob.interstitialUnitId'),fText('Rewarded unit ID','networks.admob.rewardedUnitId'),
+  fSel('Child-directed treatment','android.tagForChildDirectedTreatment',[['unspecified','Unspecified'],['true','Yes (child-directed)'],['false','No']]),fSel('Max ad content rating','android.maxAdContentRating',[['G','G'],['PG','PG'],['T','T'],['MA','MA']]));
+ var a=document.getElementById('secAndroidPl');a.replaceChildren(el('h3',null,['Android placements']),el('div',{class:'grid'},[fBool('Native banner below the game','androidPlacements.banner.enabled'),fBool('Interstitial between sessions','androidPlacements.interstitial.enabled'),fText('Interstitial min interval (s)','androidPlacements.interstitial.minIntervalSeconds',{type:'number'}),fText('Show every N finished games','androidPlacements.interstitial.everyNGames',{type:'number'}),fText('No interstitial in first N seconds','androidPlacements.interstitial.minSecondsAfterLaunch',{type:'number'}),fBool('Optional rewarded ad (Undo)','androidPlacements.rewarded.enabled')]));
+ var host=document.getElementById('secPlacements');host.replaceChildren();
+ PL.forEach(function(n){var b='placements.'+n,p=cfg.placements[n];var box=el('div',{class:'card',style:'margin-bottom:12px'},[el('h3',null,[NAMES[n]])]);
+  var gr=el('div',{class:'grid'},[fBool('Enabled',b+'.enabled'),fSel('Network',b+'.network',[['none','None'],['adsense','Google AdSense'],['adsterra','Adsterra'],['custom','Custom / house ad']],true),fDev(b+'.devices')]);
+  if(n==='interstitial'){gr.append(fText('Min seconds between breaks',b+'.minIntervalSeconds',{type:'number'}),fText('Every N finished games',b+'.everyNGames',{type:'number'}),fText('Not before N seconds after load',b+'.minSecondsAfterLoad',{type:'number'}));}
+  box.append(gr);
+  if(p.network==='adsense')box.append(el('div',{class:'grid',style:'margin-top:10px'},[fText('AdSense ad unit (slot) ID',b+'.adsense.slotId',{ph:'1234567890'}),fText('Format',b+'.adsense.format'),fText('Reserved min height (px)',b+'.adsense.minHeight',{type:'number'})]));
+  if(p.network==='adsterra')box.append(el('div',{class:'grid',style:'margin-top:10px'},[fSel('Adsterra format',b+'.adsterra.format',[['banner','Banner (iframe)'],['native','Native Banner']],true),fText('Script URL (https://…/invoke.js)',b+'.adsterra.scriptSrc'),p.adsterra.format==='banner'?fText('Banner key (32 hex)',b+'.adsterra.key'):fText('Native container id',b+'.adsterra.containerId',{ph:'container-xxxxxxxx'}),fText('Width (px)',b+'.adsterra.width',{type:'number'}),fText('Height (px)',b+'.adsterra.height',{type:'number'}),fBool('Allow same-origin in sandbox (only if Adsterra needs it)',b+'.adsterra.allowSameOrigin')]));
+  if(p.network==='custom')box.append(el('div',{class:'grid',style:'margin-top:10px'},[fText('Image URL (https)',b+'.custom.imageUrl'),fText('Click-through URL (https)',b+'.custom.href'),fText('Alt text',b+'.custom.alt')]));
+  host.append(box);});
+ document.getElementById('secAnalytics').replaceChildren(fBool('Enable GA4 analytics (after consent)','analytics.enabled'),fText('GA4 Measurement ID','analytics.measurementId',{ph:'G-XXXXXXXXXX'}));
+ refresh();}
+function refresh(){
+ var pill=document.getElementById('modePill');pill.textContent=cfg.mode==='production'?'PRODUCTION MODE':'TEST MODE';pill.className='pill '+(cfg.mode==='production'?'prod':'test');
+ var is=validate(),box=document.getElementById('issues');box.replaceChildren();
+ if(!is.length)box.append(el('div',{class:'issue ok'},['No problems found.']));
+ is.forEach(function(i){var d=el('div',{class:'issue '+i.l});d.textContent=i.l.toUpperCase()+' · '+i.p+' — '+i.m;box.append(d);});
+ document.querySelectorAll('input[data-path]').forEach(function(i){i.classList.toggle('bad',is.some(function(x){return x.l==='error'&&x.p===i.dataset.path;}));});
+ var w=document.getElementById('wire');w.replaceChildren();
+ function slot(n){var p=cfg.placements[n],on=cfg.masterEnabled&&cfg.web.enabled&&p.enabled&&p.network!=='none';var d=el('div',{class:on?'on':''});d.textContent=NAMES[n].split(' (')[0]+(on?' · '+p.network:' · off');return d;}
+ w.append(slot('topBanner'),el('div',null,['Header · score · controls']),el('div',null,['Evolution progress']),el('div',{class:'game'},['GAME BOARD (never covered)']),slot('gameOver'),slot('bottomBanner'),el('div',null,['Footer · legal links']));
+ var ab=cfg.android.enabled&&cfg.android.network==='admob';
+ w.append(el('div',{class:ab&&cfg.androidPlacements.banner.enabled?'on':''},['Android: native AdMob banner '+(ab&&cfg.androidPlacements.banner.enabled?'· on':'· off')]));
+ document.getElementById('raw').value=JSON.stringify(cfg,null,2);
+ status();}
+function status(){var st={},lg=[];try{st=JSON.parse(localStorage.getItem('db2048.adstatus')||'{}');lg=JSON.parse(localStorage.getItem('db2048.adlog')||'[]');}catch(e){}
+ var t=document.getElementById('status');t.replaceChildren();var tb=el('table',null,[el('tr',null,[el('th',null,['Placement']),el('th',null,['Network']),el('th',null,['Status']),el('th',null,['Detail'])])]);
+ PL.forEach(function(n){var s=st[n]||{};var r=el('tr');[n,s.network||'—',s.status||'not seen yet',s.detail||''].forEach(function(x){var c=el('td');c.textContent=x;r.append(c);});tb.append(r);});t.append(tb);
+ document.getElementById('log').textContent=lg.length?lg.map(function(x){return new Date(x.t).toISOString()+'  '+x.m;}).join('\n'):'(empty)';}
+function load(raw){cfg=merge(defaults(),raw);build();}
+document.getElementById('btnSave').onclick=function(){try{localStorage.setItem('db2048.adconfig.preview',JSON.stringify(cfg));alert('Draft saved in this browser. Open the game with ?adpreview=1 to test it.');}catch(e){alert('Could not save: '+e.message);}};
+document.getElementById('btnDownload').onclick=function(){var is=validate().filter(function(i){return i.l==='error';});if(is.length&&!confirm(is.length+' validation error(s) remain. Invalid placements will stay disabled on the site. Download anyway?'))return;var a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'})),download:'ad-config.json'});document.body.append(a);a.click();a.remove();};
+document.getElementById('btnReset').onclick=function(){if(confirm('Reset everything to safe defaults (all ads OFF)?')){cfg=defaults();try{localStorage.removeItem('db2048.adconfig.preview');}catch(e){}build();}};
+document.getElementById('btnLoad').onclick=function(){fetch('../ad-config.json',{cache:'no-cache'}).then(function(r){return r.json();}).then(load).catch(function(e){alert('Could not load ../ad-config.json: '+e.message);});};
+document.getElementById('btnImport').onclick=function(){try{load(JSON.parse(document.getElementById('raw').value));}catch(e){alert('Invalid JSON: '+e.message);}};
+document.getElementById('btnClearLog').onclick=function(){try{localStorage.removeItem('db2048.adlog');}catch(e){}status();};
+fetch('../ad-config.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():null;}).then(function(j){if(j)cfg=merge(defaults(),j);build();}).catch(function(){build();});
+})();
+</script>
+</body>
+</html>
