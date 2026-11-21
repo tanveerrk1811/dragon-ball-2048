@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Orange orb inside the adaptive-icon safe zone -->
+    <path
+        android:fillColor="#FF8A1F"
+        android:pathData="M54,54m-26,0a26,26 0,1 1,52 0a26,26 0,1 1,-52 0" />
+    <path
+        android:fillColor="#40FFFFFF"
+        android:pathData="M42,40m-9,0a9,5 0,1 1,18 0a9,5 0,1 1,-18 0" />
+    <path
+        android:fillColor="#C1121F"
+        android:pathData="M54,44m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path
+        android:fillColor="#C1121F"
+        android:pathData="M47,57m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path
+        android:fillColor="#C1121F"
+        android:pathData="M61,57m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path
+        android:fillColor="#C1121F"
+        android:pathData="M54,64m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+</vector>
