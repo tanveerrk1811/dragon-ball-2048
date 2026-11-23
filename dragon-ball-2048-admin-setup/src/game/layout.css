@@ -1,0 +1,496 @@
+/* =====================================================================================================
+   Dragon Ball 2048 — responsive layout system (layout / sizing / overflow ONLY — no game visuals here)
+
+   Root causes of the old scrolling + clipping (all fixed here):
+   1. The page was a free-flowing document taller than the screen (header + evolution panel + board + hint
+      + footer ≈ 920px), so every phone/laptop got a vertical page scrollbar.
+   2. The board width was guessed as `100vh - 330px`, which is wrong whenever the surrounding blocks change
+      height (wrapping footer, 2-line hint, ads…) and ignores width entirely in landscape.
+   3. The `.app` column was hard-capped at 580px, so desktops wasted the screen and phones in landscape got
+      a desktop column that ran off the bottom.
+   4. The nowrap <h1> was wider than its grid column at ≤360px and slid under the tool buttons.
+   5. `overflow-x: hidden` on <html> AND <body> masked all of the above instead of fixing it.
+
+   The fix: `.app` is exactly one viewport tall (100dvh) and is a CSS grid whose template is different for each
+   device class. The board lives in a size-container (`.stage`) and is sized from the space that is actually
+   left over (cqw / cqh), so it always fits, never scrolls and never overlaps.
+
+   Layout classes (selected purely by media queries, later rules win):
+     A  base ............ phone, portrait (also any narrow window)
+     B  ≥720px portrait . tablet portrait
+     C  ≥600px landscape  tablet landscape (two columns)
+     D  landscape, <600px high ... phone landscape (board left, compact panel right)
+     E  ≥1200px wide, ≥600px high . desktop (three columns, centred, capped)
+   ===================================================================================================== */
+
+html { height: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { min-height: 100%; touch-action: manipulation; }
+#root { width: 100%; }
+
+/* ---------- A · base: phone portrait ---------- */
+.app {
+  /* design tokens, overridden per layout below */
+  --pad: 12px;
+  --gap: 10px;
+  --colgap: 12px;
+  --hint-h: 40px;
+  --btn: 46px;
+  --orb: 40px;
+  --h1: min(22px, 6.3vw);
+  --evo-img: 44px;
+  --board-max: 2000px;
+  --min-h: 540px;
+
+  box-sizing: border-box;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: var(--min-h);
+  margin: 0 auto;
+  /* safe areas: notch / dynamic island / home indicator / rounded landscape corners */
+  padding:
+    max(var(--pad), env(safe-area-inset-top))
+    max(var(--pad), env(safe-area-inset-right))
+    max(var(--pad), env(safe-area-inset-bottom))
+    max(var(--pad), env(safe-area-inset-left));
+  /* Transformation effects (.fx-slash etc.) and tile auras are deliberately drawn past the board. They used to
+     stretch the page's scrollable area while playing (11–50px of phantom scroll). The app box is exactly the
+     viewport, so clipping here only trims ink that is already off-screen — and `clip` (unlike `hidden`)
+     does not create a scroll container. */
+  overflow: hidden;
+  overflow: clip;
+  display: grid;
+  column-gap: var(--colgap);
+  row-gap: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas:
+    "top    top"
+    "brand  brand"
+    "scores tools"
+    "evo    evo"
+    "stage  stage"
+    "goad   goad"
+    "bottom bottom"
+    "foot   foot";
+}
+
+/* header children become direct grid items so each layout can place them independently */
+.app .head { display: contents; }
+.app > [data-slot="topBanner"] { grid-area: top; }
+.app > .gameover-ad { grid-area: goad; }
+.app > [data-slot="bottomBanner"] { grid-area: bottom; }
+.app .brand { grid-area: brand; }
+.app .tools { grid-area: tools; }
+.app .scores { grid-area: scores; }
+.app .evo { grid-area: evo; }
+.app .stage { grid-area: stage; }
+.app .foot { grid-area: foot; }
+
+/* vertical rhythm through margins (empty/hidden grid rows then cost nothing) */
+.app .brand, .app .tools, .app .scores, .app .evo, .app .stage { margin: 0 0 var(--gap); }
+.app .ad-slot { margin: 0 0 var(--gap); min-width: 0; }
+.app .gameover-ad { min-width: 0; }
+
+/* header */
+.app .brand { margin-top: 0; min-width: 0; gap: 10px; }
+.app .orb { width: var(--orb); height: var(--orb); }
+.app .brand h1 { font-size: var(--h1); }
+.app .brand p { font-size: 9.5px; letter-spacing: 0.36em; margin-top: 4px; white-space: nowrap; }
+.app .tools { gap: 8px; align-self: center; }
+.app .icon-btn { width: var(--btn); height: var(--btn); border-radius: 14px; }
+.app .scores { gap: 8px; min-width: 0; }
+.app .score-box { padding: 6px 10px; border-radius: 13px; min-width: 0; }
+.app .score-box span { font-size: 9.5px; }
+.app .score-box strong { font-size: 20px; line-height: 1.25; }
+
+/* evolution panel (compact) */
+.app .evo { padding: 8px 10px; gap: 6px 10px; border-radius: 16px; }
+.app .evo-card { gap: 9px; }
+.app .evo-card img { width: var(--evo-img); height: var(--evo-img); border-radius: 12px; }
+.app .evo-card strong { font-size: 12.5px; }
+.app .evo-card em { font-size: 10.5px; }
+.app .evo-card .k { font-size: 8.5px; }
+.app .evo-meta { font-size: 10.5px; margin-top: 4px; }
+
+/* board stage: a size container; the board takes exactly what is left */
+.app .stage {
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.app .board {
+  flex: none;
+  width: min(100cqw, calc(100cqh - var(--hint-h)), var(--board-max));
+}
+.app .hint {
+  flex: none;
+  box-sizing: border-box;
+  height: var(--hint-h);
+  width: min(100%, 560px);
+  margin: 0;
+  padding-top: 8px;
+  overflow: hidden;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+/* footer */
+.app .foot { margin-top: 0; padding-top: 8px; min-width: 0; }
+.app .foot nav { gap: 0 12px; }
+.app .foot nav a, .app .foot nav button { font-size: 12px; padding: 5px 2px; }
+.app .foot small { font-size: 9.5px; line-height: 1.35; margin-top: 4px; max-width: none; }
+
+/* very short portrait phones: reclaim height for the board (full disclaimer is in the About dialog) */
+@media (max-height: 700px) and (orientation: portrait) {
+  .app { --min-h: 480px; --gap: 8px; }
+  .app .foot small { display: none; }
+}
+@media (max-height: 640px) and (orientation: portrait) {
+  .app { --hint-h: 0px; --gap: 6px; --pad: 10px; }
+  .app .hint, .app .brand p { display: none; }
+  .app .foot { padding-top: 6px; }
+  .app .foot nav { gap: 0 9px; }
+  .app .foot nav a, .app .foot nav button { font-size: 11px; padding: 3px 1px; min-height: 0; }
+}
+@media (max-width: 340px) {
+  .app .evo-card em { display: none; }
+  .app .brand p { letter-spacing: 0.26em; }
+}
+
+/* dialogs, toast, consent — viewport-safe on every device */
+/* Tailwind's preflight zeroes <dialog> margins, which pinned every dialog to the top-left corner */
+dialog.modal { margin: auto; max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+.modal-card { max-height: calc(100dvh - 34px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overscroll-behavior: contain; }
+/* keep headings clear of the × close button */
+.modal-card h3 { padding-right: 44px; }
+.toast {
+  top: max(14px, env(safe-area-inset-top));
+  /* fully off-screen + invisible while idle (the empty toast's border used to peek in at the top edge) */
+  transform: translate(-50%, calc(-100% - 40px));
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.25s ease;
+}
+.toast.show { opacity: 1; }
+.consent {
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+/* fallback for browsers without container query units */
+@supports not (width: 1cqw) {
+  .app .board { width: min(100%, 60vh, var(--board-max)); }
+}
+
+/* touch devices: comfortable tap targets everywhere */
+@media (pointer: coarse) {
+  .app .foot nav a, .app .foot nav button { min-height: 32px; display: inline-flex; align-items: center; }
+  .modal-x { width: 44px; height: 44px; }
+}
+
+/* ---------- B · tablet portrait (≥720px wide) ---------- */
+@media (min-width: 720px) and (orientation: portrait) {
+  .app {
+    --pad: 22px;
+    --gap: 14px;
+    --colgap: 16px;
+    --hint-h: 44px;
+    --btn: 54px;
+    --orb: 48px;
+    --h1: clamp(21px, 3.1vw, 30px);
+    --evo-img: 68px;
+    --board-max: 820px;
+    --min-h: 640px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "top    top    top"
+      "brand  scores tools"
+      "evo    evo    evo"
+      "stage  stage  stage"
+      "goad   goad   goad"
+      "bottom bottom bottom"
+      "foot   foot   foot";
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto;
+  }
+  .app .brand p { font-size: 10px; letter-spacing: 0.4em; }
+  .app .tools { gap: 10px; }
+  .app .icon-btn { border-radius: 16px; }
+  .app .icon-btn svg { width: 24px; height: 24px; }
+  .app .scores { grid-template-columns: 110px 110px; gap: 10px; }
+  .app .score-box { padding: 7px 12px; border-radius: 15px; }
+  .app .score-box span { font-size: 10.5px; }
+  .app .score-box strong { font-size: 25px; }
+
+  .app .evo {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 1fr);
+    grid-template-areas: "cur mid next";
+    align-items: center;
+    gap: 18px;
+    padding: 12px 18px;
+    border-radius: 20px;
+  }
+  .app .evo-card { gap: 14px; }
+  .app .evo-card strong { font-size: 15.5px; }
+  .app .evo-card em { font-size: 12px; }
+  .app .evo-card .k { font-size: 9.5px; }
+  .app .evo-card img { border-radius: 16px; }
+  .app .bar { height: 10px; }
+  .app .evo-meta { font-size: 12px; margin-top: 8px; flex-direction: column; gap: 3px; }
+
+  .app .hint { font-size: 13.5px; padding-top: 14px; }
+  .app .foot { padding-top: 12px; }
+  .app .foot nav { gap: 2px 14px; flex-wrap: nowrap; }
+  .app .foot nav a, .app .foot nav button { font-size: 13px; padding: 6px 2px; white-space: nowrap; }
+  .app .foot small { font-size: 11px; max-width: 78ch; margin-top: 6px; }
+}
+@media (min-width: 720px) and (orientation: portrait) and (max-height: 900px) {
+  .app .foot small { display: none; }
+}
+
+/* ---------- C · tablet landscape (≥600px wide): board left, control column right ---------- */
+@media (min-width: 600px) and (min-height: 600px) and (orientation: landscape) {
+  .app {
+    --pad: 22px;
+    --gap: 14px;
+    --colgap: 28px;
+    --hint-h: 42px;
+    --btn: 56px;
+    --orb: 52px;
+    --h1: clamp(25px, 3.1vw, 32px);
+    --evo-img: 64px;
+    --board-max: 900px;
+    --min-h: 0px;
+    grid-template-columns: minmax(0, 1fr) clamp(300px, 34vw, 420px);
+    grid-template-rows: auto minmax(0, 1fr) auto auto auto auto minmax(0, 1fr) auto auto auto;
+    grid-template-areas:
+      "top    top"
+      "stage  ."
+      "stage  brand"
+      "stage  scores"
+      "stage  tools"
+      "stage  evo"
+      "stage  ."
+      "stage  foot"
+      "goad   goad"
+      "bottom bottom";
+  }
+  .app .brand h1 { white-space: normal; line-height: 1.02; }
+  .app .brand h1 span { display: block; font-size: 1.35em; }
+  .app .brand p { font-size: 10px; letter-spacing: 0.4em; }
+  .app .tools { align-self: stretch; }
+  .app .tools .icon-btn { flex: 1; width: auto; height: var(--btn); }
+  .app .icon-btn svg { width: 24px; height: 24px; }
+  .app .scores { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .app .score-box { padding: 9px 12px; border-radius: 15px; }
+  .app .score-box span { font-size: 10.5px; }
+  .app .score-box strong { font-size: 27px; }
+
+  .app .evo {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "cur" "next" "mid";
+    gap: 12px;
+    padding: 14px;
+    border-radius: 20px;
+  }
+  .app .evo-card, .app .evo-card.next { flex-direction: row; text-align: left; justify-content: flex-start; gap: 14px; }
+  .app .evo-card strong { font-size: 15px; }
+  .app .evo-card em { font-size: 12px; }
+  .app .evo-card .k { font-size: 9.5px; }
+  .app .evo-card img { border-radius: 16px; }
+  .app .bar { height: 10px; }
+  .app .evo-meta { font-size: 12px; margin-top: 8px; }
+
+  .app .hint { font-size: 13px; padding-top: 12px; }
+  .app .foot { padding-top: 12px; }
+  .app .foot nav { gap: 2px 14px; }
+  .app .foot nav a, .app .foot nav button { font-size: 13px; padding: 5px 3px; }
+  .app .foot small { font-size: 10.5px; margin-top: 8px; }
+}
+@media (min-width: 600px) and (min-height: 600px) and (orientation: landscape) and (max-height: 820px) {
+  .app .foot small { display: none; }
+  .app { --gap: 12px; }
+  .app .evo-card img { width: 56px; height: 56px; }
+}
+
+/* ---------- D · phone landscape (short screens): board left, compact panel right ---------- */
+@media (orientation: landscape) and (max-height: 599px) {
+  .app {
+    --pad: 8px;
+    --gap: 6px;
+    --colgap: 14px;
+    --hint-h: 0px;
+    --btn: 42px;
+    --orb: 30px;
+    --h1: clamp(11px, 2.6vw, 20px);
+    --evo-img: 38px;
+    --board-max: 2000px;
+    --min-h: 0px;
+    --vpad: calc(max(var(--pad), env(safe-area-inset-top)) + max(var(--pad), env(safe-area-inset-bottom)));
+    grid-template-columns: min(calc(100dvh - var(--vpad)), 52vw) minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto auto;
+    grid-template-areas:
+      "top    top    top"
+      "stage  brand  brand"
+      "stage  scores tools"
+      "stage  evo    evo"
+      "stage  .      ."
+      "stage  foot   foot"
+      "goad   goad   goad"
+      "bottom bottom bottom";
+  }
+  .app .brand { gap: 8px; }
+  .app .brand h1 { white-space: nowrap; }
+  .app .brand h1 span { display: inline; font-size: inherit; }
+  .app .brand p { font-size: 8.5px; margin-top: 3px; letter-spacing: 0.3em; }
+  .app .tools { gap: 6px; align-self: stretch; }
+  .app .icon-btn { width: var(--btn); height: auto; min-height: var(--btn); border-radius: 12px; }
+  .app .tools .icon-btn { flex: none; }
+  .app .icon-btn svg { width: 19px; height: 19px; }
+  .app .scores { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .app .score-box { padding: 4px 8px; border-radius: 11px; }
+  .app .score-box span { font-size: 8.5px; letter-spacing: 0.18em; }
+  .app .score-box strong { font-size: 18px; line-height: 1.2; }
+
+  .app .evo {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "cur next" "mid mid";
+    padding: 7px 9px;
+    gap: 5px 8px;
+    border-radius: 14px;
+  }
+  .app .evo-card { gap: 8px; }
+  .app .evo-card img { border-radius: 10px; border-width: 1.5px; }
+  .app .evo-card strong { font-size: 11px; }
+  .app .evo-card em { font-size: 9.5px; }
+  .app .evo-card .k { font-size: 7.5px; letter-spacing: 0.14em; }
+  .app .bar { height: 6px; }
+  .app .evo-meta { font-size: 9.5px; margin-top: 3px; }
+
+  .app .stage { margin-bottom: 0; }
+  .app .hint { display: none; }
+  .app .foot { padding-top: 6px; align-self: end; }
+  .app .foot nav { gap: 0 10px; }
+  .app .foot nav a, .app .foot nav button { font-size: 11px; padding: 3px 1px; min-height: 0; }
+  .app .foot small { font-size: 8.5px; margin-top: 3px; }
+
+  .consent {
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 720px;
+  }
+  .consent[hidden] { display: none; }
+  .consent p { margin: 0; font-size: 11px; line-height: 1.35; }
+  .consent .btn-row { flex: none; flex-wrap: nowrap; }
+  .consent .btn { padding: 8px 12px; font-size: 12px; }
+  dialog.modal { width: min(640px, calc(100% - 24px)); }
+}
+@media (orientation: landscape) and (max-height: 599px) and (min-width: 1000px) {
+  .app { max-width: 1100px; }
+}
+@media (orientation: landscape) and (max-height: 400px) {
+  .app .foot small { display: none; }
+}
+@media (orientation: landscape) and (max-height: 340px) {
+  .app .evo-card em { display: none; }
+  .app .brand p { display: none; }
+}
+
+/* ---------- E · desktop (≥1200px wide): three columns, centred, board capped ---------- */
+@media (min-width: 1200px) and (min-height: 600px) {
+  .app {
+    --pad: 26px;
+    --gap: 16px;
+    --colgap: 32px;
+    --hint-h: 46px;
+    --btn: 54px;
+    --orb: 64px;
+    --h1: 34px;
+    --evo-img: 76px;
+    --board-max: 880px;
+    --min-h: 560px;
+    max-width: 1640px;
+    grid-template-columns: minmax(250px, 310px) minmax(0, 1fr) minmax(250px, 310px);
+    grid-template-rows: auto minmax(0, 1fr) auto auto auto minmax(0, 1fr) auto auto auto;
+    grid-template-areas:
+      "top    top    top"
+      ".      stage  evo"
+      "brand  stage  evo"
+      "scores stage  evo"
+      "tools  stage  evo"
+      ".      stage  evo"
+      "goad   goad   goad"
+      "bottom bottom bottom"
+      "foot   foot   foot";
+  }
+  /* left column — brand / scores / controls, vertically centred against the board */
+  .app .brand { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .app .brand h1 { white-space: normal; line-height: 1.02; letter-spacing: 0.05em; }
+  .app .brand h1 span { display: block; font-size: 1.5em; margin-top: 2px; }
+  .app .brand p { font-size: 11px; letter-spacing: 0.44em; margin-top: 10px; }
+  .app .tools { align-self: stretch; gap: 12px; }
+  .app .tools .icon-btn { flex: 1; width: auto; height: var(--btn); border-radius: 16px; }
+  .app .icon-btn svg { width: 24px; height: 24px; }
+  .app .scores { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .app .score-box { padding: 12px 14px; border-radius: 16px; }
+  .app .score-box span { font-size: 11px; }
+  .app .score-box strong { font-size: 30px; }
+
+  /* right column — evolution panel */
+  .app .evo {
+    align-self: center;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "cur" "next" "mid";
+    gap: 16px;
+    padding: 18px;
+    margin-bottom: 0;
+    border-radius: 22px;
+  }
+  .app .evo-card, .app .evo-card.next { flex-direction: row; text-align: left; justify-content: flex-start; gap: 16px; }
+  .app .evo-card strong { font-size: 16.5px; }
+  .app .evo-card em { font-size: 12.5px; }
+  .app .evo-card .k { font-size: 10px; }
+  .app .evo-card img { border-radius: 18px; }
+  .app .bar { height: 10px; }
+  .app .evo-meta { font-size: 12px; margin-top: 8px; }
+
+  .app .tools { margin-bottom: 0; }
+  .app .stage { margin-bottom: 0; }
+  .app .hint { font-size: 13.5px; padding-top: 16px; }
+
+  /* footer: one tidy row */
+  .app .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 40px;
+    margin-top: var(--gap);
+    padding-top: 12px;
+  }
+  .app .foot nav { gap: 2px 18px; justify-content: flex-start; flex: none; }
+  .app .foot nav a, .app .foot nav button { font-size: 13px; padding: 5px 3px; }
+  .app .foot small { margin: 0; font-size: 10.5px; text-align: right; max-width: 62ch; }
+}
+@media (min-width: 1200px) and (min-height: 600px) and (max-height: 720px) {
+  .app { --pad: 20px; --gap: 12px; --evo-img: 64px; }
+  .app .brand { gap: 10px; }
+  .app .orb { width: 54px; height: 54px; }
+  .app .brand h1 { font-size: 30px; }
+  .app .evo { gap: 12px; padding: 14px; }
+}
+@media (min-width: 1200px) and (min-height: 600px) and (max-width: 1320px) {
+  .app .foot small { display: none; }
+}
+@media (min-width: 2000px) and (min-height: 1200px) {
+  .app { --board-max: 1000px; max-width: 1900px; }
+}

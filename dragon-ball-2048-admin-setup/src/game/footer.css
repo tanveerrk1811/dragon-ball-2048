@@ -1,0 +1,40 @@
+/* Footer additions for the legal-page links. Loaded AFTER layout.css so it only overrides footer nav behaviour:
+   the nav may wrap onto extra lines (the board row is minmax(0,1fr), so the board shrinks instead of overlapping),
+   and nothing in the footer can force horizontal scrolling. */
+.app .foot nav {
+  flex-wrap: wrap !important;
+  justify-content: center;
+  min-width: 0;
+  max-width: 100%;
+}
+.app .foot nav a,
+.app .foot nav button {
+  white-space: nowrap;
+}
+
+/* tighter on phones so the extra links cost as little board height as possible */
+@media (max-width: 600px) {
+  .app .foot nav { gap: 0 10px; }
+  .app .foot nav a,
+  .app .foot nav button { font-size: 11.5px; padding: 3px 1px; }
+}
+@media (pointer: coarse) and (max-width: 600px) {
+  .app .foot nav a,
+  .app .foot nav button { min-height: 28px; }
+}
+
+/* desktop: footer is a flex row (links left, notice right) — let the links share the row and wrap */
+@media (min-width: 1200px) and (min-height: 600px) {
+  .app .foot nav { flex: 1 1 0; min-width: 0; justify-content: flex-start; }
+  .app .foot small { flex: 0 1 46ch; min-width: 0; }
+}
+
+/* wide-but-short landscape phones: footer sits in a narrow column, keep it compact */
+@media (orientation: landscape) and (max-height: 599px) {
+  .app .foot nav { gap: 0 8px; }
+  .app .foot nav a,
+  .app .foot nav button { font-size: 10.5px; padding: 2px 1px; min-height: 0; }
+}
+
+/* in-game link styling parity for the consent banner links */
+.consent a { color: var(--blue); }
